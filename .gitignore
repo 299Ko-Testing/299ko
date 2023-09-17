@@ -1,0 +1,3 @@
+/data/
+/.lando.yml
+*.cache.php
