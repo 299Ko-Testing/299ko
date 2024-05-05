@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @copyright (C) 2023, 299Ko
+ * @copyright (C) 2024, 299Ko
  * @license https://www.gnu.org/licenses/gpl-3.0.en.html GPLv3
  * @author Maxence Cauderlier <mx.koder@gmail.com>
  * 
@@ -9,17 +9,17 @@
  */
 defined('ROOT') OR exit('No direct script access allowed');
 
-class Controller {
+abstract class Controller {
     
     /**
      * Core instance
-     * @var \core
+     * @var core
      */
     protected core $core;
     
     /**
      * Router instance
-     * @var \router
+     * @var router
      */
     protected router $router;
 
@@ -28,17 +28,21 @@ class Controller {
      * @var pluginsManager
      */
     protected pluginsManager $pluginsManager;
-    
+
     /**
-     * Current plugin instance
-     * @var plugin
+     * JSON data sent by fetch, used for API
+     * @var array
      */
-    protected plugin $runPlugin;
+    protected array $jsonData = [];
     
     public function __construct() {
         $this->core = core::getInstance();
         $this->router = router::getInstance();
         $this->pluginsManager = pluginsManager::getInstance();
-        $this->runPlugin = $this->pluginsManager->getPlugin($this->core->getPluginToCall());
+        $contentType = isset($_SERVER["CONTENT_TYPE"]) ? trim($_SERVER["CONTENT_TYPE"]) : '';
+        if ($contentType === "application/json") {
+            $content = trim(file_get_contents("php://input"));
+            $this->jsonData = json_decode($content, true);
+        }
     }
 }

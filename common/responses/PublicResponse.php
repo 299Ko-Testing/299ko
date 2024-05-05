@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @copyright (C) 2023, 299Ko
+ * @copyright (C) 2024, 299Ko
  * @license https://www.gnu.org/licenses/gpl-3.0.en.html GPLv3
  * @author Maxence Cauderlier <mx.koder@gmail.com>
  * 
@@ -9,13 +9,7 @@
  */
 defined('ROOT') OR exit('No direct script access allowed');
 
-class PublicResponse {
-
-    /**
-     * Templates array
-     * @var array Template
-     */
-    protected array $templates = [];
+class PublicResponse extends Response {
 
     /**
      * Current theme name
@@ -29,21 +23,10 @@ class PublicResponse {
      */
     protected Template $layout;
 
-    /**
-     * Construct
-     */
     public function __construct() {
+        parent::__construct();
         $this->themeName = core::getInstance()->getConfigVal('theme');
         $this->layout = new Template(THEMES . $this->themeName .'/layout.tpl');
-    }
-
-    /**
-     * Add a Template in content
-     * @param Template $template
-     * @return void
-     */
-    public function addTemplate(Template $template) {
-        $this->templates[] = $template;
     }
 
     /**
@@ -64,11 +47,21 @@ class PublicResponse {
         return $tpl;
     }
 
+    public function createCoreTemplate(string $templateName):Template {
+        $themeFile = THEMES . $this->themeName . '/' . $templateName . '.tpl';
+        if (file_exists($themeFile)) {
+            $tpl = new Template($themeFile);
+        } else {
+            $tpl = new Template(COMMON . 'templates/' . $templateName . '.tpl');
+        }
+        return $tpl;
+    }
+
     /**
      * Return the response
      * @return string Content of all template
      */
-    public function output()
+    public function output():string
     {
         $content = '';
         foreach ($this->templates as $tpl) {

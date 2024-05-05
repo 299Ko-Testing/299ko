@@ -31,7 +31,8 @@ class lang {
     
     public static $availablesLocales = [
         'fr' => 'Français',
-        'en' => 'English'
+        'en' => 'English',
+        'ru' => 'Russian'
     ];
     
     /**
@@ -40,6 +41,7 @@ class lang {
      */
     public static function setLocale(string $locale) {
         self::$locale = $locale;
+        setlocale(LC_ALL, $locale);
     }
     
     /**
@@ -48,6 +50,16 @@ class lang {
      */
     public static function getLocale():string {
         return self::$locale;
+    }
+
+    /**
+     * Get the available locales and their names
+     *
+     * @return array An array of available locales as keys and locale names as values
+     */
+    public static function getAvailablesLocales(): array
+    {
+        return self::$availablesLocales;
     }
     
     /**

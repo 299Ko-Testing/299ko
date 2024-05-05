@@ -18,22 +18,22 @@ function pageInstall() {
     $page = new page();
     if (count($page->getItems()) < 1) {
         $pageItem = new pageItem();
-        $pageItem->setName('Accueil');
+        $pageItem->setName(lang::get('page.home'));
         $pageItem->setPosition(1);
         $pageItem->setIsHomepage(1);
-        $pageItem->setContent('<p>Félicitations, l\'installation de 299ko s\'est déroulée avec succès !<br>Par mesure de sécurité, vous devez maintenant supprimer le fichier install.php du répertoire d\'installation.</p>');
+        $pageItem->setContent('<p>'. lang::get('page.home-content').'</p>');
         $pageItem->setIsHidden(0);
         $page->save($pageItem);
         $page = new page();
         $page = new page();
         $pageItem = new pageItem();
-        $pageItem->setName('Liens');
+        $pageItem->setName(lang::get('page.links'));
         $pageItem->setPosition(2);
-        $pageItem->setContent('<ul><li><a href="https://github.com/299Ko">Suivre 299Ko sur GitHub</a></li>'
-                . '<li><a href="https://facebook.com/299kocms/">Suivre 299Ko sur Facebook</a></li>'
-                . '<li><a href="https://twitter.com/299kocms">Suivre 299Ko sur Twitter</a></li>'
-                . '<li><a href="https://299ko.ovh">Site Officiel 299Ko</a></li>'
-                . '<li><a href="https://docs.299ko.ovh/shelves/documentation">Documentation de 299Ko</a></li></ul>');
+        $pageItem->setContent('<ul><li><a href="https://github.com/299Ko">'. lang::get('page.links-git') .'</a></li>'
+                . '<li><a href="https://facebook.com/299kocms/">'. lang::get('page.links-fb') .'</a></li>'
+                . '<li><a href="https://twitter.com/299kocms">'. lang::get('page.links-twt') .'</a></li>'
+                . '<li><a href="https://299ko.ovh">'. lang::get('page.links-site') .'</a></li>'
+                . '<li><a href="https://docs.299ko.ovh">'. lang::get('page.links-doc') .'</a></li></ul>');
         $page->save($pageItem);
     }
 }
@@ -73,7 +73,7 @@ class page {
         $pluginsManager = pluginsManager::getInstance();
         // Création d'items de navigation absents (plugins)
         foreach ($pluginsManager->getPlugins() as $k => $plugin)
-            if ($plugin->getConfigVal('activate') && $plugin->getPublicFile() && $plugin->getName() != 'page') {
+        if ($plugin->getConfigVal('activate') && ($plugin->getPublicFile() || $plugin->getIsCallableOnPublic()) && $plugin->getName() != 'page') {
                 $find = false;
                 foreach ($page->getItems() as $k2 => $pageItem) {
                     if ($pageItem->getTarget() == $plugin->getName())
@@ -225,10 +225,10 @@ class page {
 
     public function listTemplates() {
         $core = core::getInstance();
-        $data = array();
-        $items = util::scanDir(THEMES . $core->getConfigVal('theme') . '/', array('header.php', 'footer.php', 'style.css', '404.php', 'functions.php'));
+        $data = [];
+        $items = util::scanDir(THEMES . $core->getConfigVal('theme') . '/', ['404.tpl', 'layout.tpl']);
         foreach ($items['file'] as $file) {
-            if (in_array(util::getFileExtension($file), array('htm', 'html', 'txt', 'php')))
+            if (util::getFileExtension($file) === 'tpl')
                 $data[] = $file;
         }
         return $data;
@@ -290,6 +290,7 @@ class page {
                 $pos = $i + 1;
                 $items[$i]['position'] = $pos;
             }
+            util::writeJsonFile($this->pagesFile, $items);
             if ($array)
                 return $items;
             foreach ($items as $pageItem) {
@@ -459,6 +460,8 @@ class pageItem {
     }
 
     public function getTarget() {
+        if ($this->target == 'url')
+            return '';
         return $this->target;
     }
 
@@ -491,16 +494,18 @@ class pageItem {
     }
 
     public function targetIs() {
-        if ($this->getTarget() == '')
+        if ($this->target == '')
             return 'page';
-        elseif ($this->getTarget() == 'javascript:')
+        elseif ($this->target == 'javascript:')
             return 'parent';
-        elseif (filter_var($this->getTarget(), FILTER_VALIDATE_URL))
+        elseif (filter_var($this->target, FILTER_VALIDATE_URL) || $this->target == 'url')
             return 'url';
-        else
+        else 
             return 'plugin';
     }
 
-}
+    public function isVisibleOnList():bool {
+        return $this->targetIs() != "plugin" || ($this->targetIs() == "plugin" && pluginsManager::isActivePlugin($this->getTarget()));
+    }
 
-?>
+}

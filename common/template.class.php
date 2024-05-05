@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @copyright (C) 2022, 299Ko
+ * @copyright (C) 2024, 299Ko
  * @license https://www.gnu.org/licenses/gpl-3.0.en.html GPLv3
  * @author Maxence Cauderlier <mx.koder@gmail.com>
  * 
@@ -99,26 +99,27 @@ class Template {
      * {{ Lang.key }}
      * {{ Lang.key2(5, "moi") }}
      * {{ MY_VAR }}
+     * {{ MY_VAR ~ "25" }}
      * {% FOR MY_VAR IN MY_VARS %} ... {{MY_VAR.name}} ... {% ENDFOR %}
      * {% FOR key , val IN plop %} ... {{ key }} - {{ val.propertie }} ... {% ENDFOR %}
      * {% SET plop = ["plo", 5] %}
      * {% DUMP plop %}
      */
     protected function parse() {
-        $this->content = preg_replace_callback('#\{\% *NOPARSE *\%\}(.*)\{\% *ENDNOPARSE *\%\}#isU', 'self::_no_parse', $this->content);
+        $this->content = preg_replace_callback('#\{\% *NOPARSE *\%\}(.*)\{\% *ENDNOPARSE *\%\}#isU', [$this,'_no_parse'], $this->content);
         $this->content = preg_replace('#\{\#(.*)\#\}#isU', '<?php /* $1 */ ?>', $this->content);
-        $this->content = preg_replace_callback('#\{\% *IF +(.+) *\%\}#iU', 'self::_ifReplace', $this->content);
-        $this->content = preg_replace_callback('#\{% *SET (.+) = (.+) *%\}#iU', 'self::_setReplace', $this->content);
-        $this->content = preg_replace_callback('#\{% *DUMP (.+) *%\}#iU', 'self::_dumpReplace', $this->content);
-        $this->content = preg_replace_callback('#\{\% *HOOK.(.+) *\%\}#iU', 'self::_callHook', $this->content);
-        $this->content = preg_replace_callback('#\{\{ *Lang.(.+) *\}\}#iU', 'self::_getLang', $this->content);
-        $this->content = preg_replace_callback('#\{\% *INCLUDE +(.+) *\%\}#iU', 'self::_include', $this->content);
+        $this->content = preg_replace_callback('#\{\% *IF +(.+) *\%\}#iU', [$this,'_ifReplace'], $this->content);
+        $this->content = preg_replace_callback('#\{% *SET (.+) = (.+) *%\}#iU', [$this,'_setReplace'], $this->content);
+        $this->content = preg_replace_callback('#\{% *DUMP (.+) *%\}#iU', [$this,'_dumpReplace'], $this->content);
+        $this->content = preg_replace_callback('#\{\% *HOOK.(.+) *\%\}#iU', [$this,'_callHook'], $this->content);
+        $this->content = preg_replace_callback('#\{\{ *Lang.(.+) *\}\}#U', [$this,'_getLang'], $this->content);
+        $this->content = preg_replace_callback('#\{\% *INCLUDE +(.+) *\%\}#iU', [$this,'_include'], $this->content);
         $this->content = preg_replace('#\{\{ *(.+) *\}\}#iU', '<?php $this->_show_var(\'$1\'); ?>', $this->content);
-        $this->content = preg_replace_callback('#\{\% *FOR +(.+) +IN +(.+) *\%\}#i', 'self::_replace_for', $this->content);
+        $this->content = preg_replace_callback('#\{\% *FOR +(.+) +IN +(.+) *\%\}#i', [$this,'_replace_for'], $this->content);
         $this->content = preg_replace('#\{\% *ENDFOR *\%\}#i', '<?php endforeach; ?>', $this->content);
         $this->content = preg_replace('#\{\% *ENDIF *\%\}#i', '<?php } ?>', $this->content);
         $this->content = preg_replace('#\{\% *ELSE *\%\}#i', '<?php }else{ ?>', $this->content);
-        $this->content = preg_replace_callback('#\{\% *ELSEIF +(.+) *\%\}#iU', 'self::_elseifReplace', $this->content);
+        $this->content = preg_replace_callback('#\{\% *ELSEIF +(.+) *\%\}#iU', [$this,'_elseifReplace'], $this->content);
         $this->content = str_replace('#/§&µ&§;#', '{', $this->content);
     }
 
@@ -185,8 +186,6 @@ class Template {
         if ($posAcc !== false) {
             $args = substr($matches[1], $posAcc);
             $name = substr($matches[1], 0, $posAcc);
-            $args = str_replace('(', '', $args);
-            $args = str_replace(')', '', $args);
         } else {
             $name = $matches[1];
         }
@@ -242,6 +241,15 @@ class Template {
      */
     protected function getVar($var, $parent) {
         $var = trim($var);
+        if ($var === "" || $var === '""') return "";
+        $concats = explode('~', $var);
+        if (count($concats) > 1) {
+            $content = '';
+            foreach ($concats as $concat) {
+                $content .= $this->getVar($concat, $this->data);
+            }
+            return $content;
+        }
         // Check if the string is empty, true or false
         if ($var === '' || $var === 'true' || $var === 'false')
             return $var;
@@ -255,15 +263,22 @@ class Template {
         }
 
         // Check if the string is an array
-        if (preg_match('#\[ *(.+) *\]#iU', $var, $matches)) {
+        if (preg_match('#^\[ *(.+) *\]$#iU', $var, $matches)) {
             $parts = explode(',', $matches[1]);
             $arr = [];
             // Loop through the parts and get the variables
             foreach ($parts as $part) {
-                $arr[] = $this->getVar($part, $this->data);
+                if (preg_match('#^(.+) => (.+)$#iU', trim($part), $assArray)) {
+                    // Associative array
+                    $arr[$this->getVar($assArray[1], $this->data)] = $this->getVar($assArray[2], $this->data);
+                } else {
+                    // simple array
+                    $arr[] = $this->getVar($part, $this->data);
+                }
             }
             return $arr;
         }
+
         // Get the position of the parentheses
         $posAcc = strpos($var, '(');
         $args = '';
@@ -329,7 +344,7 @@ class Template {
         if (isset($match[1])) {
             $var = str_replace($match[0], "", $var);
             $args = true;
-            $parts = explode(',', $match[1]);
+            $parts = $this->tExplode($match[1], ',');
             if (count($parts) > 1)
                 $manyArgs = true;
         } else {
@@ -357,8 +372,9 @@ class Template {
                     return $parent::$var();
                 }
                 // Method
-                if ($manyArgs)
+                if ($manyArgs) {
                     return call_user_func_array([$parent, $var], $args);
+                }                    
                 if (isset($args))
                     return call_user_func_array([$parent, $var], [$args]);
                 return $parent->$var();
@@ -395,5 +411,36 @@ class Template {
             $this->data[$key] = $value;
         }
     }
+
+    /**
+     * Explodes a string into an array, ignoring delimiters inside parentheses () or []
+     * 
+     * @param string $str The string to explode. 
+     * @param string $delimiter The delimiter to split on.
+     * @return array The exploded array.
+     */
+    protected function tExplode(string $str, string $delimiter): array
+    {
+        $ret = array();
+        $in_parenths = 0;
+        $pos = 0;
+        for ($i = 0; $i < strlen($str); $i++) {
+            $c = $str[$i];
+            if ($c == $delimiter && $in_parenths < 1) {
+                $ret[] = substr($str, $pos, $i - $pos);
+                $pos = $i + 1;
+            } elseif ($c === '(' || $c === '[')
+                $in_parenths++;
+            elseif ($c === ')' || $c === ']')
+                $in_parenths--;
+        }
+        if ($pos > 0)
+            $ret[] = substr($str, $pos);
+        if (empty($ret)) {
+            $ret[0] = $str;
+        }
+        return $ret;
+    }
+
 
 }

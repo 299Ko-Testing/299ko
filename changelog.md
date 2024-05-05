@@ -2,15 +2,102 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## V2.0.0
+
+### Added
+
+- Comments blog can be nested
+- Compatibility with PHP 8.3
+- Users can be stay connected (cookies)
+- Antispam fully Translated
+- New Users Plugin
+- Themes can modify plugins templates
+- Blog plugin fully translated & MVC
+- Contact plugin fully translated & MVC
+- Responses as API
+- FileManager MVC & translated
+- TinyMCE : Add images from FileManager
+- Galerie : MVC & translated
+- PluginsManager : MVC & translated
+- Page : MVC & translated
+- SEO : MVC & translated
+- Allow langs in theme
+- Russian language
+
+### Fixed
+
+- Description in banner
+- URL Generation by router when a port is specified
+- Blog metadatas
+- Remove Pagination when empty
+- Contact : Bad message when mail function is not available
+- Blog : empty categories
+- TinyMCE : Upload img URL issue when CMS is in a sub directory
+- Page : URL issue when CMS is in a sub directory
+
+### Changed
+
+- Page template has to be in .tpl format
+- Users connect and managements
+- Force use responses & controllers
+
+## V1.3.2
+
+### Added
+
+- Add Categories System
+- Add Categories for Blog plugin
+- Add a hook `adminToolsTemplates` to display links tools in admin
+- Can translate plugin name & description
+- Add concatenation of strings in templates (by `~`)
+
+### Changed
+
+- Galerie in MVC
+- End of `header.php` & `footer.php` in public theme
+
+### Fixed
+
+- Blog List HTML entities
+- Blog TOC empty headings
+
+## V1.3.1
+
+### Added
+
+- Table of Content in Blog
+
+### Changed
+
+- Use spl_autoload to load all common class
+
+### Fixed
+
+- Content out of box with big images in blog
+- Install with PHP installed as a CGI
+- Mobile view Sidebar
+
+## V1.3.0
 
 ### Added
 
 - New brands for SEO plugin
+- Lang class
+- Admin menu expand
+- Public Sidebar
+- Router class
+- MVC model (for blog, contact & page)
+- Groups buttons
+- Begin to translate to English
+
+### Changed
+
+- Template Improvements
 
 ### Fixed
 
 - Issue during install with logger when data folder dont exist
+- Hide page title when selected in params
 
 ## V1.2.5
 

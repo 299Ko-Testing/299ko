@@ -29,6 +29,12 @@ function galerieEndFrontHead() {
     
 }
 
+function galerieGenerateEditor() {
+    global $runPlugin;
+    $introEditor = new Editor('introduction', $runPlugin->getConfigVal('introduction'), lang::get('galerie.introduction'), true);
+    return $introEditor;
+}
+
 ## Code relatif au plugin
 
 class galerie {
@@ -181,13 +187,13 @@ class galerieItem {
 
     public function __construct($data = array()) {
         if (count($data) > 0) {
-            $this->id = $data['id'];
-            $this->title = $data['title'];
-            $this->content = $data['content'];
-            $this->date = $data['date'];
-            $this->img = $data['img'];
-            $this->category = $data['category'];
-            $this->hidden = (isset($data['hidden'])) ? $data['hidden'] : 0;
+            $this->id = $data['id'] ?? '';
+            $this->title = $data['title'] ?? '';
+            $this->content = $data['content'] ?? '';
+            $this->date = $data['date'] ?? date('Y-m-d');
+            $this->img = $data['img'] ?? '';
+            $this->category = $data['category'] ?? '';
+            $this->hidden = $data['hidden'] ?? 0;
         }
     }
 
@@ -207,7 +213,7 @@ class galerieItem {
     public function setDate($val) {
         $val = trim($val);
         if ($val == '')
-            $val = date('Y-m-d H:i:s');
+            $val = date('Y-m-d');
         $this->date = $val;
     }
 
@@ -270,7 +276,7 @@ class galerieItem {
  * @param  string  $type       'auto' => prend le coté le plus grand
  *                             'width' => prend la largeur en référence
  *                             'height' => prend la hauteur en référence
- * @param  booleen  $upload 	   true si c'est une image uploadée, false si c'est le chemin d'une image déjà sur le serveur
+ * @param  boolean $upload 	   true si c'est une image uploadée, false si c'est le chemin d'une image déjà sur le serveur
  * @return string              'success' => redimentionnement effectué avec succès
  *                             'wrong_path' => le chemin du fichier est incorrect
  *                             'no_img' => le fichier n'est pas une image

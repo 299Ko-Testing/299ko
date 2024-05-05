@@ -33,7 +33,7 @@ class pluginsManager {
      * Retourne un objet plugin
      * 
      * @param string Nom du plugin
-     * @return \plugin
+     * @return plugin|false
      */
     public function getPlugin($name) {
         foreach ($this->plugins as $plugin) {
@@ -55,24 +55,34 @@ class pluginsManager {
 
     public function installPlugin($name, $activate = false) {
         // Création du dossier data
-        @mkdir(DATA_PLUGIN . $name . '/', 0755);
-        @chmod(DATA_PLUGIN . $name . '/', 0755);
+        if (!is_dir(DATA_PLUGIN . $name)) {
+            mkdir(DATA_PLUGIN . $name . '/', 0755);
+        }
+        chmod(DATA_PLUGIN . $name . '/', 0755);
         // Lecture du fichier config usine
         $config = util::readJsonFile(PLUGINS . $name . '/param/config.json');
         // Par défaut le plugin est inactif
         if ($activate)
-            $config['activate'] = "1";
+            $config['activate'] = 1;
         else
-            $config['activate'] = "0";
+            $config['activate'] = 0;
         // Création du fichier config
-        @util::writeJsonFile(DATA_PLUGIN . $name . '/config.json', $config);
-        @chmod(DATA_PLUGIN . $name . '/config.json', 0644);
+        util::writeJsonFile(DATA_PLUGIN . $name . '/config.json', $config);
+        chmod(DATA_PLUGIN . $name . '/config.json', 0644);
         // Appel de la fonction d'installation du plugin
-        if (function_exists($name . 'Install'))
-            call_user_func($name . 'Install');
+        if (file_exists(PLUGINS . $name . '/' . $name . '.php')) {
+            require_once (PLUGINS . $name . '/' . $name . '.php');
+            if (function_exists($name . 'Install')) {
+                logg("Call function '" . $name . "Install");
+                call_user_func($name . 'Install');
+            }
+        }
         // Check du fichier config
-        if (!file_exists(DATA_PLUGIN . $name . '/config.json'))
+        if (!file_exists(DATA_PLUGIN . $name . '/config.json')) {
+            logg("Plugin $name can't be installed", "error");
             return false;
+        }
+        logg("Plugin $name successfully installed", "success");
         return true;
     }
 

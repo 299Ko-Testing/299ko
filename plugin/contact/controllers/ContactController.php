@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @copyright (C) 2023, 299Ko
+ * @copyright (C) 2024, 299Ko
  * @license https://www.gnu.org/licenses/gpl-3.0.en.html GPLv3
  * @author Maxence Cauderlier <mx.koder@gmail.com>
  * 
@@ -9,7 +9,7 @@
  */
 defined('ROOT') or exit('No direct script access allowed');
 
-class ContactController extends Controller
+class ContactController extends PublicController
 {
 
     public function home()
@@ -43,19 +43,23 @@ class ContactController extends Controller
         sleep(2);
         if ($antispam) {
             if (!$antispam->isValid()) {
-                show::msg("Antispam invalide, veuillez réessayer", 'error');
+                show::msg(lang::get('antispam.invalid-captcha'), 'error');
                 $sendError = true;
             }
         }
         if (!$sendError) {
-            if ($_POST['_name'] == '' && strchr($_SERVER['HTTP_REFERER'], 'contact') && contactSend())
-                show::msg("Message envoyé", 'success');
-            else {
-                show::msg("Champ(s) incomplet(s) ou email invalide", 'error');
+            if ($_POST['_name'] == '' && strchr($_SERVER['HTTP_REFERER'], 'contact') !== false) {
+                if (contactSend()) {
+                    show::msg(lang::get('contact.msg-sent'), 'success');
+                } else {
+                    show::msg(lang::get('something-wrong'), 'error');
+                    $sendError = true;
+                }
+            } else {
+                show::msg(lang::get('contact.fiels-error'), 'error');
                 $sendError = true;
             }
         }
-
         return $this->home();
     }
 }

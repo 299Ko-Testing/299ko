@@ -68,7 +68,7 @@ class show {
             $core = core::getInstance();
             $pluginsManager = pluginsManager::getInstance();
             foreach ($core->getCss() as $k => $v) {
-                echo '<link href="' . $v . '" rel="stylesheet" type="text/css" />';
+                echo '<link href="' . util::urlBuild($v) . '" rel="stylesheet" type="text/css" />';
             }
             foreach ($pluginsManager->getPlugins() as $k => $plugin)
                 if ($plugin->getConfigval('activate') == 1) {
@@ -91,7 +91,7 @@ class show {
             $core = core::getInstance();
             $pluginsManager = pluginsManager::getInstance();
             foreach ($core->getJs() as $k => $v) {
-                echo '<script type="text/javascript" src="' . $v . '"></script>';
+                echo '<script type="text/javascript" src="' . util::urlBuild($v) . '"></script>';
             }
             foreach ($pluginsManager->getPlugins() as $k => $plugin)
                 if ($plugin->getConfigval('activate') == 1) {
@@ -116,9 +116,12 @@ class show {
 
     ## Affiche un champ de formulaire contenant le jeton de session (admin)
 
-    public static function adminTokenField() {
-        $core = core::getInstance();
-        echo '<input type="hidden" name="token" value="' . administrator::getToken() . '" />';
+    public static function tokenField() {
+        $user = UsersManager::getCurrentUser();
+        if ($user === null) {
+            return "";
+        }
+        echo '<input type="hidden" name="token" value="' . $user->token . '" />';
     }
 
     ## Affiche le contenu de la meta title (theme)
@@ -130,7 +133,7 @@ class show {
             $core = core::getInstance();
             global $runPlugin;
             if (!$runPlugin)
-                echo '404';
+                echo Lang::get('core-404-title');
             else
                 echo $runPlugin->getTitleTag() . ' - ' . $core->getConfigVal('siteName');
         }
@@ -161,7 +164,7 @@ class show {
             global $runPlugin;
             $data = $format;
             if (!$runPlugin)
-                $data = str_replace('[mainTitle]', '404', $data);
+                $data = str_replace('[mainTitle]', Lang::get('core-404-title'), $data);
             else {
                 if ($core->getConfigVal('hideTitles') == 0 && $runPlugin->getMainTitle() != '') {
                     $data = $format;
@@ -262,10 +265,10 @@ class show {
             $data = '';
             $arrPlugins = [];
             foreach ($pluginsManager->getPlugins() as $k => $v) {
-                if ($v->getConfigVal('activate') && $v->getAdminFile()) {
+                if ($v->getConfigVal('activate') && $v->getIsCallableOnAdmin()) {
                     $arrPlugins[$v->getInfoVal('name')]['name'] = $v->getName();
                     $arrPlugins[$v->getInfoVal('name')]['icon'] = $v->getInfoVal('icon');
-                    $arrPlugins[$v->getInfoVal('name')]['label'] = $v->getInfoVal('name');
+                    $arrPlugins[$v->getInfoVal('name')]['label'] = $v->getTranslatedName();
                 }
             }
             ksort($arrPlugins, SORT_STRING);
@@ -275,7 +278,7 @@ class show {
                 if ($currentPlugin === $label['name']) {
                     $data .= ' class="activePlugin"';
                 }
-                $data .= '><a href="?p=' . $label['name'] . '"' ;
+                $data .= '><a href="' . core::getInstance()->getConfigVal('siteUrl') . '/admin/'. $label['name'] . '"' ;
                 if ($currentPlugin === $label['name']) {
                     $data .= ' aria-current="page"';
                 }
